@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UNIPAZ - La Cadena del Barril | Procesos Industriales I</title>
+  <style>
+    :root {
+      --verde-oscuro: #004d25; --verde: #006837; --verde-suave: #e8f5e9;
+      --oro: #f2b600; --oro-oscuro: #c68a00; --bg: #f4f6f8; --carta: #fff;
+      --texto: #0f172a; --tenue: #475569; --borde: #cbd5e1;
+      --sombra: 0 6px 18px rgba(0,0,0,.08);
+      --fuente: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--fuente); background: var(--bg); color: var(--texto); line-height: 1.5; min-height: 100vh; display: flex; flex-direction: column; }
+    .cabecera { background: var(--verde-oscuro); color: #fff; padding: .8rem 1.5rem; border-bottom: 4px solid var(--oro); display: flex; justify-content: space-between; align-items: center; gap: .75rem; flex-wrap: wrap; }
+    .marca { display: flex; align-items: center; gap: .6rem; }
+    .insignia { background: var(--oro); color: var(--verde-oscuro); font-weight: 800; font-size: .85rem; padding: .25rem .65rem; border-radius: 4px; }
+    .titulo-app { font-weight: 700; font-size: 1.05rem; }
+    .sub-app { font-size: .78rem; color: #a5d6a7; }
+    .marcadores { display: flex; gap: .6rem; align-items: center; }
+    .reloj, .marcador { font-family: monospace; font-size: 1.15rem; font-weight: 800; color: var(--oro); background: rgba(255,255,255,.12); padding: .3rem .8rem; border-radius: 8px; }
+    .btn-cab { background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.3); padding: .4rem .8rem; border-radius: 6px; font-size: .82rem; font-weight: 600; cursor: pointer; }
+    .btn-cab:hover { background: var(--oro); color: var(--verde-oscuro); }
+    .escenario { flex: 1; display: flex; justify-content: center; padding: 1.25rem; }
+    .lamina { display: none; width: 100%; max-width: 1050px; background: var(--carta); border: 1px solid var(--borde); border-radius: 14px; box-shadow: var(--sombra); padding: 1.8rem 2.3rem; overflow-y: auto; }
+    .lamina.activa { display: block; }
+    .etiqueta { display: inline-block; background: var(--verde); color: #fff; font-size: .72rem; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; padding: .28rem .7rem; border-radius: 20px; margin-bottom: .7rem; }
+    .etiqueta.oro { background: var(--oro); color: var(--verde-oscuro); }
+    h1 { font-size: clamp(1.4rem, 3.2vw, 2rem); color: var(--verde-oscuro); line-height: 1.15; margin-bottom: .4rem; }
+    .bajada { color: var(--tenue); font-size: .98rem; margin-bottom: 1rem; }
+    .rejilla2 { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+    @media (min-width: 820px) { .rejilla2 { grid-template-columns: 1fr 1fr; } }
+    .caja { background: #f8fafc; border: 1px solid var(--borde); border-left: 5px solid var(--verde); border-radius: 10px; padding: .95rem 1.15rem; margin-bottom: .8rem; }
+    .caja.oro { border-left-color: var(--oro); }
+    .caja h3 { color: var(--verde-oscuro); font-size: 1rem; margin-bottom: .35rem; }
+    .caja p, .caja li { font-size: .93rem; }
+    .caja ul, .caja ol { padding-left: 1.15rem; margin-top: .3rem; }
+    .caja li { margin-bottom: .3rem; }
+    .datos { background: var(--verde-suave); border: 1px solid #a5d6a7; border-radius: 10px; padding: .8rem 1.1rem; margin-bottom: .8rem; }
+    .datos li { font-size: .92rem; margin-bottom: .25rem; }
+    .pie { background: var(--verde-oscuro); color: #fff; padding: .7rem 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+    .contador { font-family: monospace; font-size: .9rem; color: #a5d6a7; }
+    .nav-botones { display: flex; gap: .5rem; }
+    .btn-nav { background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.3); padding: .5rem 1.1rem; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: .9rem; }
+    .btn-nav:disabled { opacity: .35; }
+    .btn-nav.oro { background: var(--oro); color: var(--verde-oscuro); border-color: var(--oro); }
+
+    /* Reto 1: ordenar la cadena */
+    .etapas-banco { display: flex; flex-wrap: wrap; gap: .6rem; margin-bottom: 1.1rem; }
+    .etapa-carta { background: #fff; border: 2px solid var(--verde); border-radius: 10px; padding: .7rem 1rem; font-weight: 700; color: var(--verde-oscuro); cursor: pointer; font-size: .88rem; transition: .15s; text-align: left; }
+    .etapa-carta small { display: block; font-weight: 400; color: var(--tenue); font-size: .74rem; margin-top: .15rem; }
+    .etapa-carta:hover { background: var(--verde-suave); }
+    .etapa-carta.usada { opacity: .3; cursor: default; pointer-events: none; }
+    .etapas-slots { display: grid; grid-template-columns: repeat(1, 1fr); gap: .6rem; margin-bottom: .8rem; }
+    @media (min-width: 700px) { .etapas-slots { grid-template-columns: repeat(5, 1fr); } }
+    .slot { min-height: 90px; border: 2px dashed var(--borde); border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: .5rem; font-weight: 700; color: var(--tenue); cursor: pointer; text-align: center; font-size: .82rem; }
+    .slot .num { font-size: .66rem; color: var(--oro-oscuro); font-weight: 800; margin-bottom: .25rem; text-transform: uppercase; letter-spacing: .5px; }
+    .slot.lleno { border-style: solid; color: var(--verde-oscuro); background: var(--verde-suave); }
+    .slot.correcto { border-color: #1a7f37; background: #e6f7ea; color: #1a7f37; }
+    .slot.incorrecto { border-color: #b42318; background: #fef2f2; color: #b42318; }
+
+    /* Reto 2: actores y roles */
+    .parejas-wrap { display: grid; grid-template-columns: 1fr; gap: 1.2rem; margin-bottom: .8rem; }
+    @media (min-width: 820px) { .parejas-wrap { grid-template-columns: 1fr 1fr; } }
+    .pareja-btn { display: block; width: 100%; text-align: left; background: #fff; border: 2px solid var(--borde); border-radius: 10px; padding: .6rem .9rem; margin-bottom: .55rem; font-size: .86rem; cursor: pointer; color: var(--texto); }
+    .pareja-btn.pieza { font-weight: 700; color: var(--verde-oscuro); }
+    .pareja-btn.seleccionada { border-color: var(--oro-oscuro); background: #fefce8; }
+    .pareja-btn.correcta { border-color: #1a7f37; background: #e6f7ea; color: #1a7f37; pointer-events: none; opacity: .9; }
+    .pareja-btn.incorrecta { border-color: #b42318; background: #fef2f2; animation: sacude .3s; }
+    @keyframes sacude { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+    .btn-accion { background: var(--verde); color: #fff; border: none; padding: .6rem 1.3rem; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: .92rem; margin-top: .3rem; }
+    .btn-accion:hover { background: var(--verde-oscuro); }
+    .btn-accion:disabled { opacity: .4; cursor: default; }
+
+    .resultado-grande { text-align: center; padding: 1rem; }
+    .resultado-grande .num-grande { font-size: 3rem; font-weight: 900; color: var(--verde-oscuro); }
+    .resultado-grande .sub-grande { color: var(--tenue); font-size: .95rem; }
+
+    @media print { .cabecera, .pie { display: none !important; } .lamina { display: block !important; page-break-after: always; box-shadow: none; border: none; } }
+  </style>
+</head>
+<body>
+
+  <header class="cabecera">
+    <div class="marca">
+      <span class="insignia">UNIPAZ</span>
+      <div>
+        <div class="titulo-app">La Cadena del Barril 🧩 · Semana 8</div>
+        <div class="sub-app">Procesos Industriales I · Actividad de cierre, sin conexión</div>
+      </div>
+    </div>
+    <div class="marcadores">
+      <span class="marcador" id="marcadorPuntos">0 / 20</span>
+      <span class="reloj" id="reloj">00:00</span>
+      <button class="btn-cab" onclick="document.documentElement.requestFullscreen && document.documentElement.requestFullscreen()">⛶</button>
+    </div>
+  </header>
+
+  <main class="escenario">
+
+    <!-- 1 · Reglas -->
+    <section class="lamina activa">
+      <span class="etiqueta">La actividad · 20 minutos</span>
+      <h1>La cadena del barril: dos retos, un puntaje</h1>
+      <p class="bajada">Este archivo funciona sin internet y sin plataforma. Todo el puntaje se calcula en su computador. El cronómetro arranca en cuanto entren al primer reto.</p>
+      <div class="rejilla2">
+        <div class="caja">
+          <h3>🧩 Reto 1 · Ordenar la cadena</h3>
+          <p>Van a ver los cinco eslabones de la cadena del petróleo en desorden. Hagan clic en cada uno para colocarlo en su casilla, de upstream a downstream; si se equivocan, hagan clic en la casilla para devolverlo al banco. Al final, "Verificar orden" revela los aciertos.</p>
+          <p style="margin-top:.4rem;"><strong>Vale 10 puntos:</strong> 2 por cada eslabón en su lugar correcto.</p>
+        </div>
+        <div class="caja oro">
+          <h3>🔗 Reto 2 · Actores y roles</h3>
+          <p>Cinco actores de la industria petrolera colombiana a la izquierda, cinco roles desordenados a la derecha. Hagan clic en un actor y luego en el rol que le corresponde. Un acierto se queda fijo en verde; si falla, ambos parpadean en rojo y pueden intentar de nuevo.</p>
+          <p style="margin-top:.4rem;"><strong>Vale 10 puntos:</strong> 2 por cada pareja correcta.</p>
+        </div>
+      </div>
+      <div class="caja">
+        <h3>🏆 Sobre el puntaje</h3>
+        <p>El marcador de la esquina suma los dos retos, sobre 20 puntos en total. <strong>Solo el primer intento completo, de principio a fin, se guarda como su resultado oficial</strong> en este computador. Después de eso pueden volver a jugar en modo práctica todas las veces que quieran, sin que se sobrescriba el resultado oficial.</p>
+      </div>
+      <div id="avisoPrevio"></div>
+    </section>
+
+    <!-- 2 · Reto 1 -->
+    <section class="lamina">
+      <span class="etiqueta oro">Reto 1 de 2</span>
+      <h1>🧩 Ordenen los cinco eslabones</h1>
+      <p class="bajada">Hagan clic en las tarjetas para colocarlas en orden, del primer eslabón de upstream al último de downstream.</p>
+      <div class="etapas-banco" id="banco1"></div>
+      <div class="etapas-slots" id="slots1"></div>
+      <button class="btn-accion" id="btnVerificar1">Verificar orden</button>
+      <p id="resultadoReto1" style="margin-top:.6rem; font-weight:700; color:var(--verde-oscuro);"></p>
+      <button class="btn-accion" id="btnSiguienteReto" style="display:none; background:var(--oro-oscuro);">Ir al reto 2 ▶</button>
+    </section>
+
+    <!-- 3 · Reto 2 -->
+    <section class="lamina">
+      <span class="etiqueta oro">Reto 2 de 2</span>
+      <h1>🔗 Asocien cada actor con su rol</h1>
+      <p class="bajada">Aciertos: <strong id="contadorAciertos">0 de 5</strong>. Hagan clic en un actor y después en el rol que le corresponde.</p>
+      <div class="parejas-wrap">
+        <div id="colPiezas"></div>
+        <div id="colFunciones"></div>
+      </div>
+      <button class="btn-accion" id="btnVerResultado" disabled>Ver resultado final ▶</button>
+    </section>
+
+    <!-- 4 · Resultado -->
+    <section class="lamina">
+      <span class="etiqueta">Resultado final</span>
+      <h1>Así les fue</h1>
+      <div class="resultado-grande">
+        <div class="num-grande"><span id="resTotal">0</span> / 20</div>
+        <div class="sub-grande">Reto 1 (cadena): <span id="resReto1">0</span> / 10 &nbsp;·&nbsp; Reto 2 (actores): <span id="resReto2">0</span> / 10 &nbsp;·&nbsp; Tiempo: <span id="resTiempo">00:00</span></div>
+      </div>
+      <div class="caja" id="mensajeGuardado"></div>
+      <div class="caja oro" id="resOficial" style="display:none;">
+        <h3>📌 Tu resultado oficial</h3>
+        <p id="resOficialTexto"></p>
+      </div>
+      <button class="btn-accion" id="btnPracticar">🔄 Jugar de nuevo (modo práctica)</button>
+    </section>
+
+  </main>
+
+  <footer class="pie">
+    <span class="contador">Pantalla <span id="actual">1</span> de <span id="total">4</span></span>
+    <div class="nav-botones">
+      <button class="btn-nav" id="ant" disabled>◀ Anterior</button>
+      <button class="btn-nav oro" id="sig">Siguiente ▶</button>
+    </div>
+  </footer>
+
+  <script>
+    // ---------- Datos del juego ----------
+    const ETAPAS = [
+      { n: 'Exploración', d: 'upstream · sísmica y geología para ubicar la trampa' },
+      { n: 'Perforación y extracción', d: 'upstream · el pozo saca el crudo y el gas a superficie' },
+      { n: 'Transporte', d: 'midstream · oleoductos y poliductos hasta la refinería' },
+      { n: 'Refinación', d: 'downstream · separa el crudo en combustibles y derivados' },
+      { n: 'Distribución y comercialización', d: 'downstream · llega al surtidor y al consumidor final' }
+    ];
+    const PIEZAS = [
+      { n: 'Ecopetrol', f: 'Empresa mayoritariamente estatal que opera en los tres tramos de la cadena: explora, produce, transporta y refina.' },
+      { n: 'ANH', f: 'Administra el subsuelo en nombre del Estado, asigna bloques y contratos, y fiscaliza las regalías.' },
+      { n: 'Operadoras privadas', f: 'Exploran y producen crudo y gas bajo contrato con la ANH, solas o en asocio con Ecopetrol.' },
+      { n: 'Cenit', f: 'Filial de Ecopetrol dedicada exclusivamente a transportar crudo y derivados por oleoductos y poliductos.' },
+      { n: 'Refinería de Barrancabermeja', f: 'Transforma el crudo del Magdalena Medio en gasolina, diésel y otros derivados.' }
+    ];
+
+    let estado = {
+      reto1: { slots: [null, null, null, null, null], score: 0, verificado: false },
+      reto2: { acertadas: 0, score: 0, piezaSel: null },
+      cronoIniciado: false
+    };
+    let piezaSeleccionadaBtn = null;
+
+    function barajar(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+      }
+      return a;
+    }
+
+    function actualizarMarcador() {
+      const total = estado.reto1.score + estado.reto2.score;
+      document.getElementById('marcadorPuntos').textContent = total + ' / 20';
+    }
+
+    // ---------- Reto 1: ordenar la cadena ----------
+    function initReto1() {
+      estado.reto1 = { slots: [null, null, null, null, null], score: 0, verificado: false };
+      const banco = document.getElementById('banco1');
+      banco.innerHTML = '';
+      const orden = barajar(ETAPAS.map(function (e) { return e.n; }));
+      orden.forEach(function (nombre) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'etapa-carta';
+        btn.textContent = nombre;
+        btn.dataset.etapa = nombre;
+        btn.addEventListener('click', function () { colocarEtapa(nombre, btn); });
+        banco.appendChild(btn);
+      });
+      pintarSlots1();
+      document.getElementById('btnVerificar1').disabled = true;
+      document.getElementById('resultadoReto1').textContent = '';
+      document.getElementById('btnSiguienteReto').style.display = 'none';
+      actualizarMarcador();
+    }
+
+    function colocarEtapa(nombre, btnEl) {
+      if (estado.reto1.verificado) return;
+      const idx = estado.reto1.slots.findIndex(function (s) { return s === null; });
+      if (idx === -1) return;
+      estado.reto1.slots[idx] = nombre;
+      btnEl.classList.add('usada');
+      pintarSlots1();
+      document.getElementById('btnVerificar1').disabled = estado.reto1.slots.includes(null);
+    }
+
+    function quitarEtapa(idx) {
+      if (estado.reto1.verificado) return;
+      const nombre = estado.reto1.slots[idx];
+      if (!nombre) return;
+      estado.reto1.slots[idx] = null;
+      const banco = document.getElementById('banco1');
+      Array.from(banco.children).forEach(function (btn) {
+        if (btn.dataset.etapa === nombre) btn.classList.remove('usada');
+      });
+      pintarSlots1();
+      document.getElementById('btnVerificar1').disabled = true;
+    }
+
+    function pintarSlots1() {
+      const cont = document.getElementById('slots1');
+      cont.innerHTML = '';
+      for (let i = 0; i < 5; i++) {
+        const div = document.createElement('div');
+        div.className = 'slot' + (estado.reto1.slots[i] ? ' lleno' : '');
+        div.innerHTML = '<span class="num">Eslabón ' + (i + 1) + '</span>' + (estado.reto1.slots[i] || 'Vacío');
+        div.addEventListener('click', function () { quitarEtapa(i); });
+        cont.appendChild(div);
+      }
+    }
+
+    function verificarReto1() {
+      if (estado.reto1.slots.includes(null)) return;
+      let puntos = 0;
+      const cont = document.getElementById('slots1');
+      const ordenCorrecto = ETAPAS.map(function (e) { return e.n; });
+      Array.from(cont.children).forEach(function (div, i) {
+        if (estado.reto1.slots[i] === ordenCorrecto[i]) { div.classList.add('correcto'); puntos += 2; }
+        else { div.classList.add('incorrecto'); }
+      });
+      estado.reto1.score = puntos;
+      estado.reto1.verificado = true;
+      document.getElementById('resultadoReto1').textContent = 'Puntaje del reto 1: ' + puntos + ' de 10';
+      document.getElementById('btnVerificar1').disabled = true;
+      document.getElementById('btnSiguienteReto').style.display = 'inline-block';
+      actualizarMarcador();
+    }
+
+    // ---------- Reto 2: actores y roles ----------
+    function initReto2() {
+      estado.reto2 = { acertadas: 0, score: 0, piezaSel: null };
+      piezaSeleccionadaBtn = null;
+      const colP = document.getElementById('colPiezas');
+      const colF = document.getElementById('colFunciones');
+      colP.innerHTML = '';
+      colF.innerHTML = '';
+      PIEZAS.forEach(function (p, idx) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'pareja-btn pieza';
+        b.textContent = p.n;
+        b.dataset.idx = idx;
+        b.addEventListener('click', function () { seleccionarPieza(idx, b); });
+        colP.appendChild(b);
+      });
+      const ordenF = barajar(PIEZAS.map(function (p, idx) { return idx; }));
+      ordenF.forEach(function (idx) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'pareja-btn';
+        b.textContent = PIEZAS[idx].f;
+        b.dataset.idx = idx;
+        b.addEventListener('click', function () { seleccionarFuncion(idx, b); });
+        colF.appendChild(b);
+      });
+      document.getElementById('contadorAciertos').textContent = '0 de 5';
+      document.getElementById('btnVerResultado').disabled = true;
+      actualizarMarcador();
+    }
+
+    function seleccionarPieza(idx, btn) {
+      if (btn.classList.contains('correcta')) return;
+      if (piezaSeleccionadaBtn) piezaSeleccionadaBtn.classList.remove('seleccionada');
+      piezaSeleccionadaBtn = btn;
+      estado.reto2.piezaSel = idx;
+      btn.classList.add('seleccionada');
+    }
+
+    function seleccionarFuncion(idx, btn) {
+      if (btn.classList.contains('correcta')) return;
+      if (estado.reto2.piezaSel === null) return;
+      if (estado.reto2.piezaSel === idx) {
+        btn.classList.add('correcta');
+        piezaSeleccionadaBtn.classList.remove('seleccionada');
+        piezaSeleccionadaBtn.classList.add('correcta');
+        estado.reto2.acertadas++;
+        estado.reto2.score += 2;
+        piezaSeleccionadaBtn = null;
+        estado.reto2.piezaSel = null;
+        document.getElementById('contadorAciertos').textContent = estado.reto2.acertadas + ' de 5';
+        actualizarMarcador();
+        if (estado.reto2.acertadas === 5) {
+          document.getElementById('btnVerResultado').disabled = false;
+        }
+      } else {
+        btn.classList.add('incorrecta');
+        if (piezaSeleccionadaBtn) piezaSeleccionadaBtn.classList.add('incorrecta');
+        const piezaPrevia = piezaSeleccionadaBtn;
+        setTimeout(function () {
+          btn.classList.remove('incorrecta');
+          if (piezaPrevia) piezaPrevia.classList.remove('incorrecta', 'seleccionada');
+        }, 500);
+        piezaSeleccionadaBtn = null;
+        estado.reto2.piezaSel = null;
+      }
+    }
+
+    // ---------- Cronómetro (cuenta hacia arriba) ----------
+    let segundos = 0, intervaloReloj = null;
+    function pintarReloj() {
+      const m = String(Math.floor(segundos / 60)).padStart(2, '0');
+      const s = String(segundos % 60).padStart(2, '0');
+      document.getElementById('reloj').textContent = m + ':' + s;
+    }
+    function iniciarCronometro() {
+      if (intervaloReloj) return;
+      intervaloReloj = setInterval(function () {
+        segundos++;
+        pintarReloj();
+      }, 1000);
+    }
+    function detenerCronometro() {
+      if (intervaloReloj) { clearInterval(intervaloReloj); intervaloReloj = null; }
+    }
+
+    // ---------- Resultado final ----------
+    function mostrarResultado() {
+      detenerCronometro();
+      const total = estado.reto1.score + estado.reto2.score;
+      document.getElementById('resTotal').textContent = total;
+      document.getElementById('resReto1').textContent = estado.reto1.score;
+      document.getElementById('resReto2').textContent = estado.reto2.score;
+      document.getElementById('resTiempo').textContent = document.getElementById('reloj').textContent;
+
+      const mensaje = document.getElementById('mensajeGuardado');
+      const existente = localStorage.getItem('laCadenaDelBarril_resultado');
+      if (!existente) {
+        const registro = {
+          puntaje: total,
+          reto1: estado.reto1.score,
+          reto2: estado.reto2.score,
+          tiempo: document.getElementById('reloj').textContent,
+          fecha: new Date().toLocaleString('es-CO')
+        };
+        localStorage.setItem('laCadenaDelBarril_resultado', JSON.stringify(registro));
+        mensaje.innerHTML = '<h3>✅ Resultado oficial guardado</h3><p>Este es tu primer intento completo, y quedó guardado en este computador. Muéstrale esta pantalla al docente o toma una captura para el registro.</p>';
+        document.getElementById('resOficial').style.display = 'none';
+      } else {
+        mensaje.innerHTML = '<h3>🔄 Resultado de práctica</h3><p>Ya existe un resultado oficial guardado en este computador; este intento no lo reemplaza. Abajo puedes ver cuál fue tu resultado oficial.</p>';
+        const datos = JSON.parse(existente);
+        document.getElementById('resOficial').style.display = 'block';
+        document.getElementById('resOficialTexto').textContent = 'Puntaje: ' + datos.puntaje + ' / 20, tiempo ' + datos.tiempo + ', registrado el ' + datos.fecha + '.';
+      }
+    }
+
+    function practicarDeNuevo() {
+      segundos = 0;
+      pintarReloj();
+      initReto1();
+      initReto2();
+      estado.cronoIniciado = true;
+      iniciarCronometro();
+      ir(1);
+    }
+
+    // ---------- Navegación de pantallas ----------
+    const laminas = Array.from(document.querySelectorAll('.lamina'));
+    let i = 0;
+    document.getElementById('total').textContent = laminas.length;
+
+    function pintar() {
+      laminas.forEach(function (l, k) { l.classList.toggle('activa', k === i); });
+      document.getElementById('actual').textContent = i + 1;
+      document.getElementById('ant').disabled = i === 0;
+      document.getElementById('sig').disabled = i === laminas.length - 1;
+      if (i === 1 && !estado.cronoIniciado) {
+        estado.cronoIniciado = true;
+        iniciarCronometro();
+      }
+      if (i === 3) {
+        mostrarResultado();
+      }
+    }
+    const ir = function (n) { i = Math.max(0, Math.min(laminas.length - 1, n)); pintar(); };
+    document.getElementById('ant').onclick = function () { ir(i - 1); };
+    document.getElementById('sig').onclick = function () { ir(i + 1); };
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight' || e.key === 'PageDown') ir(i + 1);
+      if (e.key === 'ArrowLeft' || e.key === 'PageUp') ir(i - 1);
+    });
+
+    document.getElementById('btnVerificar1').onclick = verificarReto1;
+    document.getElementById('btnSiguienteReto').onclick = function () { ir(2); };
+    document.getElementById('btnVerResultado').onclick = function () { ir(3); };
+    document.getElementById('btnPracticar').onclick = practicarDeNuevo;
+
+    // Aviso si ya hay un resultado oficial guardado de una sesión anterior
+    (function () {
+      const existente = localStorage.getItem('laCadenaDelBarril_resultado');
+      if (existente) {
+        const datos = JSON.parse(existente);
+        document.getElementById('avisoPrevio').innerHTML =
+          '<div class="caja oro" style="margin-top:1rem;"><h3>📌 Ya tienes un resultado oficial en este computador</h3><p>Puntaje ' + datos.puntaje + ' / 20, tiempo ' + datos.tiempo + ', registrado el ' + datos.fecha + '. Si juegan de nuevo, este intento será de práctica y no reemplazará ese resultado.</p></div>';
+      }
+    })();
+
+    initReto1();
+    initReto2();
+    pintar();
+  </script>
+</body>
+</html>
