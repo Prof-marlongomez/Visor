@@ -26,13 +26,22 @@
   .grupo{display:flex;gap:4px;align-items:center}
   .grupo span{color:var(--tenue);font-size:11px;margin-right:2px}
   #cuerpo{display:flex;flex:1;min-height:0}
-  #escena{flex:1;position:relative;min-width:0;background:#000}
-  #escena canvas{display:block}
+  #escena{flex:1;position:relative;min-width:0;min-height:0;overflow:hidden;background:#000}
+  #escena canvas{display:block;position:absolute;left:0;top:0}
   #cortina{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:var(--fondo);color:var(--tenue);z-index:5}
   #cortina .bar{width:260px;height:6px;background:#1c2530;border-radius:3px;overflow:hidden}#cortina .bar i{display:block;height:100%;width:0;background:var(--azul)}
   #ayuda{position:absolute;left:10px;bottom:10px;background:#000b;padding:6px 10px;border-radius:5px;color:#cbd5e1;font-size:12px;pointer-events:none}
-  #vistas{position:absolute;left:10px;top:10px;display:flex;flex-wrap:wrap;gap:4px;max-width:60%}
-  #vistas button{background:#000a;border-color:#ffffff22;padding:4px 8px;font-size:12px}
+  #menu3d{position:absolute;left:10px;top:10px;z-index:3}
+  #bVistas{background:#000c;border-color:#ffffff33;padding:6px 12px;font-weight:600}
+  #bVistas .flecha{display:inline-block;margin-left:6px;transition:transform .15s}
+  #menu3d.abierto #bVistas .flecha{transform:rotate(180deg)}
+  #listaVistas{margin-top:4px;min-width:200px;max-height:calc(100vh - 140px);overflow:auto;background:#0d131bf2;border:1px solid #33475c;border-radius:6px;padding:4px;box-shadow:0 10px 30px #000a}
+  #listaVistas .sec{color:var(--tenue);font-size:11px;letter-spacing:.05em;padding:6px 10px 2px}
+  #listaVistas button{display:block;width:100%;background:transparent;border:0;text-align:left;padding:7px 10px;border-radius:4px}
+  #listaVistas button:hover{background:#1e2a38}
+  #listaVistas button.on{color:var(--azul);font-weight:600}
+  #bScada{white-space:nowrap}
+  body.sin-scada #scada{display:none}
   #etq{position:absolute;pointer-events:none;background:#000c;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;transform:translate(-50%,-130%);white-space:nowrap}
   #scada{width:620px;max-width:100%;background:var(--panel);border-left:1px solid var(--linea);display:flex;flex-direction:column;position:relative}
   .mando{display:grid;grid-template-columns:1fr 1fr 1.3fr .9fr;gap:6px;padding:8px 10px;border-bottom:1px solid var(--linea)}
@@ -81,7 +90,7 @@
     #cuerpo{flex-direction:column} #escena{flex:0 0 45vh} #scada{width:100%;flex:1;border-left:0;border-top:1px solid var(--linea)}
     #barra{flex-wrap:wrap;gap:6px;padding:6px 10px} #barra .marca{font-size:13px}
     #barra .marca small,#banner,#ayuda{display:none} .mando{grid-template-columns:1fr 1fr}
-    #vistas{flex-wrap:nowrap;overflow-x:auto;max-width:calc(100% - 20px)} #vistas button{flex:none}
+    body.sin-scada #escena{flex:1}
     #barra button{padding:4px 8px}
   }
 </style>
@@ -94,11 +103,12 @@
   <div class="grupo"><span>Velocidad</span><button data-f="1" class="on">1×</button><button data-f="10">10×</button><button data-f="60">60×</button></div>
   <div class="grupo"><span>Calidad</span><button data-q="alta">Alta</button><button data-q="liviana">Liviana</button></div>
   <button id="bSonido">🔈 Sonido</button>
+  <button id="bScada" class="on" aria-expanded="true">▤ Panel SCADA</button>
 </div>
 <div id="cuerpo">
   <div id="escena">
     <div id="cortina"><div>Cargando la planta…</div><div class="bar"><i id="progreso"></i></div></div>
-    <div id="vistas"></div>
+    <div id="menu3d"><button id="bVistas" aria-expanded="false">Vistas: <span id="vistaActual">General</span><span class="flecha">▾</span></button><div id="listaVistas" hidden></div></div>
     <div id="etq" hidden></div>
     <div id="ayuda">Arrastre para girar · clic derecho para desplazar · rueda para acercar · clic en un equipo para ver su placa</div>
   </div>
@@ -5402,7 +5412,7 @@ function permisivo(id) { return POR[id].req.filter(r => !enMarcha(r)); }
 function arrancar(id) {
   const e = POR[id];
   if (emergencia) { registrar('SIS', 'Emergencia activa: rearme antes de arrancar', 'AVISO'); return false; }
-  if (e.estado === 'disparo') { registrar(e.tag, e.nombre + ' disparada: rearme primero', 'AVISO'); return false; }
+  if (e.estado === 'disparo') { registrar(e.tag, 'Equipo en disparo: rearme primero', 'AVISO'); return false; }
   if (enMarcha(id)) return true;
   const f = permisivo(id);
   if (f.length) { registrar(e.tag, 'Sin permisivo: requiere en marcha ' + f.map(x => POR[x].tag).join(', '), 'AVISO'); return false; }
@@ -5935,8 +5945,9 @@ function pasoCargador(c, dt) {
 
 /* ---------- camara: vistas rapidas y seleccion ---------- */
 const FOCOS = { General:null, Tolva:mk('MK_FOCO_AV'), 'Mandíbula':mk('MK_FOCO_TM'), Impacto:mk('MK_FOCO_TI'), Criba:mk('MK_FOCO_CR'),
-  'Banda B1':mk('MK_FOCO_B1'), Pilas:mk('MK_FOCO_B3'), Patio:new V3(-95, 2, 0), 'Cuarto eléctrico':mk('MK_FOCO_CCM') };
-const FOCO_EQ = { AV:'Tolva', TM:'Mandíbula', TI:'Impacto', CR:'Criba', B1:'Banda B1', B5:'Banda B1', B2:'Pilas', B3:'Pilas', B4:'Pilas', CCM:'Cuarto eléctrico', CARG:'Patio' };
+  'Banda B1':mk('MK_FOCO_B1'), 'Banda B5 · retorno':mk('MK_FOCO_B5'), Pilas:mk('MK_FOCO_B3'), Patio:new V3(-95, 2, 0), 'Cuarto eléctrico':mk('MK_FOCO_CCM') };
+const FOCO_EQ = { AV:'Tolva', TM:'Mandíbula', TI:'Impacto', CR:'Criba', B1:'Banda B1', B5:'Banda B5 · retorno', B2:'Pilas', B3:'Pilas', B4:'Pilas', CCM:'Cuarto eléctrico', CARG:'Patio' };
+const SECCIONES = [['Planta', ['General']], ['Trituración', ['Tolva', 'Mandíbula', 'Impacto']], ['Clasificación y bandas', ['Criba', 'Banda B1', 'Banda B5 · retorno']], ['Patios', ['Pilas', 'Patio']], ['Servicios', ['Cuarto eléctrico']]];
 let vuelo = null;
 function irA(nombre) {
   const t = FOCOS[nombre];
@@ -5944,9 +5955,19 @@ function irA(nombre) {
   const dist = t ? (nombre === 'Patio' ? 45 : nombre === 'Pilas' ? 45 : 18) : 95;
   const off = camera.position.clone().sub(orbit.target).setLength(dist); if (off.y < dist * 0.3) off.y = dist * 0.45;
   vuelo = { t0:performance.now(), a:orbit.target.clone(), b:destino, ca:camera.position.clone(), cb:destino.clone().add(off) };
+  $('#vistaActual').textContent = nombre;
+  $$('#listaVistas button').forEach(b => b.classList.toggle('on', b.dataset.v === nombre));
 }
-$('#vistas').innerHTML = Object.keys(FOCOS).map(n => `<button>${n}</button>`).join('');
-$('#vistas').onclick = e => { if (e.target.tagName === 'BUTTON') irA(e.target.textContent); };
+$('#listaVistas').innerHTML = SECCIONES.map(([t, vs]) => `<div class="sec">${t.toUpperCase()}</div>` + vs.map(v => `<button data-v="${v}"${v === 'General' ? ' class="on"' : ''}>${v}</button>`).join('')).join('');
+function menuVistas(abrir) { $('#listaVistas').hidden = !abrir; $('#menu3d').classList.toggle('abierto', abrir); $('#bVistas').setAttribute('aria-expanded', abrir); }
+$('#bVistas').onclick = () => menuVistas($('#listaVistas').hidden);
+$('#listaVistas').onclick = e => { const b = e.target.closest('button'); if (b) { irA(b.dataset.v); menuVistas(false); } };
+document.addEventListener('pointerdown', e => { if (!e.target.closest('#menu3d')) menuVistas(false); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { menuVistas(false); cerrarPlaca(); } });
+// panel SCADA plegable: la escena 3D ocupa todo el ancho cuando se oculta
+function mostrarScada(ver) { document.body.classList.toggle('sin-scada', !ver); $('#bScada').classList.toggle('on', ver); $('#bScada').setAttribute('aria-expanded', ver); tamano(); }
+$('#bScada').onclick = () => mostrarScada(document.body.classList.contains('sin-scada'));
+new ResizeObserver(() => tamano()).observe(cont);
 const ray = new THREE.Raycaster(), ptr = new THREE.Vector2(); let abajo = null;
 renderer.domElement.addEventListener('pointerdown', e => abajo = [e.clientX, e.clientY]);
 renderer.domElement.addEventListener('pointerup', e => {
@@ -5955,7 +5976,7 @@ renderer.domElement.addEventListener('pointerup', e => {
   ptr.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1); ray.setFromCamera(ptr, camera);
   const hit = ray.intersectObjects([raiz, ...CARGS.map(c => c.env)], true)[0]; if (!hit) return;
   const g = grupoDe(hit.object); if (!g) return;
-  if (POR[g]) { abrirPlaca(g); irA(FOCO_EQ[g]); } else if (g === 'CCM') { irA('Cuarto eléctrico'); pestaña('sinoptico'); } else if (g === 'CARG') irA('Patio');
+  if (POR[g]) { abrirPlaca(g); irA(FOCO_EQ[g]); } else if (g === 'CCM') irA('Cuarto eléctrico'); else if (g === 'CARG') irA('Patio');
 });
 
 /* ========================================================================
@@ -6006,22 +6027,28 @@ $('#tMot').onclick = ev => { const m = ev.target.dataset.m, p = ev.target.datase
 
 // placa de mando (faceplate)
 let placa = null;
-function abrirPlaca(id) { placa = id; $('#face').hidden = false; pintarPlaca(); }
+function abrirPlaca(id) {
+  placa = id; const e = POR[id]; mostrarScada(true); $('#face').hidden = false;
+  $('#face').innerHTML = `<div class="cab"><div><b>${e.tag}</b> · ${e.nombre}<br><small style="color:var(--tenue)">${e.det}</small></div><button id="fx" title="Cerrar">✕</button></div>
+  <div class="cont"><div class="fila entre"><span><span class="led" id="fLed"></span><span id="fEst"></span></span><span class="mono">${fmt(e.kW, 1)} kW · 440 V</span></div>
+  <div class="dat"><div><span>Corriente</span><b class="mono" id="fI"></b></div><div><span>Nominal</span><b class="mono">${fmt(e.In)} A</b></div>
+  <div><span>Temperatura</span><b class="mono" id="fT"></b></div><div><span>Horómetro</span><b class="mono" id="fH"></b></div>
+  <div><span>Carga</span><b class="mono" id="fQ"></b></div><div><span>Arranque</span><b>${e.yd ? 'Y-Δ' : 'directo'}</b></div></div>
+  <div class="perm">Permisivos: <span id="fPerm"></span></div>
+  <div class="botones"><button class="b-verde" id="fm">Marcha</button><button style="background:#7f1d1d" id="fp">Paro</button><button id="fr">Rearme</button><button id="fu">Ver en 3D</button></div></div>`;
+  $('#fx').onclick = cerrarPlaca;
+  $('#fm').onclick = () => { secuencia = null; arrancar(placa); pintarPlaca(); };
+  $('#fp').onclick = () => { secuencia = null; if (enMarcha(placa)) parar(placa, 'mando desde placa', false); else registrar(POR[placa].tag, 'El equipo ya está detenido', 'AVISO'); pintarPlaca(); };
+  $('#fr').onclick = () => { if (POR[placa].estado === 'disparo') { POR[placa].estado = 'parado'; normalizar('disp' + placa); registrar(POR[placa].tag, 'Disparo rearmado'); } else registrar(POR[placa].tag, 'Sin disparo que rearmar', 'AVISO'); pintarPlaca(); };
+  $('#fu').onclick = () => irA(FOCO_EQ[placa]);
+  pintarPlaca();
+}
+function cerrarPlaca() { placa = null; $('#face').hidden = true; }
 function pintarPlaca() {
   if (!placa) return; const e = POR[placa];
-  const perm = e.req.length ? e.req.map(r => (enMarcha(r) ? '✓ ' : '✗ ') + POR[r].tag).join('   ') : 'sin permisivos';
-  $('#face').innerHTML = `<div class="cab"><div><b>${e.tag}</b> · ${e.nombre}<br><small style="color:var(--tenue)">${e.det}</small></div><button id="fx">✕</button></div>
-  <div class="cont"><div class="fila entre"><span><span class="led ${e.estado}"></span>${e.estado.toUpperCase()}</span><span class="mono">${fmt(e.kW, 1)} kW · 440 V</span></div>
-  <div class="dat"><div><span>Corriente</span><b class="mono">${fmt(e.I)} A</b></div><div><span>Nominal</span><b class="mono">${fmt(e.In)} A</b></div>
-  <div><span>Temperatura</span><b class="mono">${fmt(e.temp)} °C</b></div><div><span>Horómetro</span><b class="mono">${fmt(e.horas, 1)} h</b></div>
-  <div><span>Carga</span><b class="mono">${fmt(e.tph)} t/h</b></div><div><span>Arranque</span><b>${e.yd ? 'Y-Δ' : 'directo'}</b></div></div>
-  <div class="perm">Permisivos: ${perm}</div>
-  <div class="botones"><button class="b-verde" id="fm">Marcha</button><button style="background:#7f1d1d" id="fp">Paro</button><button id="fr">Rearme</button><button id="fu">Ver en 3D</button></div></div>`;
-  $('#fx').onclick = () => { placa = null; $('#face').hidden = true; };
-  $('#fm').onclick = () => { secuencia = null; arrancar(placa); };
-  $('#fp').onclick = () => { secuencia = null; parar(placa, 'mando desde placa', false); };
-  $('#fr').onclick = () => { if (POR[placa].estado === 'disparo') { POR[placa].estado = 'parado'; normalizar('disp' + placa); registrar(POR[placa].tag, 'Disparo rearmado'); } };
-  $('#fu').onclick = () => irA(FOCO_EQ[placa]);
+  $('#fLed').className = 'led ' + e.estado; $('#fEst').textContent = e.estado.toUpperCase();
+  $('#fI').textContent = fmt(e.I) + ' A'; $('#fT').textContent = fmt(e.temp) + ' °C'; $('#fH').textContent = fmt(e.horas, 1) + ' h'; $('#fQ').textContent = fmt(e.tph) + ' t/h';
+  $('#fPerm').textContent = e.req.length ? e.req.map(r => (enMarcha(r) ? '✓ ' : '✗ ') + POR[r].tag).join('   ') : 'sin permisivos';
 }
 function pestaña(t) { $$('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t)); $$('.pagina').forEach(p => p.hidden = p.id !== 'p-' + t); if (t === 'tendencias') dibujarTendencias(); }
 $('.tabs').onclick = e => { const b = e.target.closest('button'); if (b) pestaña(b.dataset.t); };
@@ -6035,7 +6062,7 @@ function pintarAlarmas() {
   $('#tAl').innerHTML = ALS.slice(0, 80).map(a => `<tr class="al ${a.estado}${a.ack ? '' : ' nr'}"><td class="mono">${reloj(a.t)}</td><td>${a.tag}</td><td style="text-align:left;white-space:normal">${a.txt}</td><td>${a.tipo === 'EVENTO' ? 'evento' : a.estado.toLowerCase()}</td></tr>`).join('');
 }
 $('#bAck').onclick = () => { ALS.forEach(a => { if (a.estado === 'ACTIVA') { a.ack = true; a.estado = 'RECONOCIDA'; } }); pintarAlarmas(); };
-$('#banner').onclick = () => pestaña('alarmas');
+$('#banner').onclick = () => { mostrarScada(true); pestaña('alarmas'); };
 
 // tendencias
 const HIST = []; let ultMuestra = 0;
@@ -6086,12 +6113,16 @@ $('#bArranque').onclick = () => {
   secuencia = { tipo:'arranque', lista:ORDEN_ARR, i:0, espera:performance.now() + 4000 };
 };
 $('#bParo').onclick = () => { registrar('SIS', 'Paro secuencial: se corta la alimentación y se vacían los equipos'); secuencia = { tipo:'paro', lista:ORDEN_PARO, i:0, espera:0, desde:performance.now() }; };
-$('#bEmerg').onclick = () => { secuencia = null; emergencia = true; EQ.forEach(e => { if (enMarcha(e.id)) e.estado = 'parado'; }); registrar('SIS', 'PARO DE EMERGENCIA activado', 'ALARMA', 'emerg'); };
-$('#bRearme').onclick = () => { emergencia = false; normalizar('emerg'); EQ.forEach(e => { if (e.estado === 'disparo') { e.estado = 'parado'; normalizar('disp' + e.id); } }); registrar('SIS', 'Disparos y emergencia rearmados'); };
+$('#bEmerg').onclick = () => { secuencia = null; emergencia = true; EQ.forEach(e => { if (enMarcha(e.id)) e.estado = 'parado'; }); registrar('SIS', 'PARO DE EMERGENCIA activado', 'ALARMA', 'emerg'); $('#bEmerg').classList.add('activa'); };
+$('#bRearme').onclick = () => { emergencia = false; normalizar('emerg'); EQ.forEach(e => { if (e.estado === 'disparo') { e.estado = 'parado'; normalizar('disp' + e.id); } }); registrar('SIS', 'Disparos y emergencia rearmados'); $('#bEmerg').classList.remove('activa'); };
 $$('#barra [data-f]').forEach(b => b.onclick = () => { factor = +b.dataset.f; $$('#barra [data-f]').forEach(x => x.classList.toggle('on', x === b)); });
 $$('#barra [data-q]').forEach(b => b.onclick = () => aplicarCalidad(b.dataset.q));
 $('#cAuto').onchange = e => { autoCarg = e.target.checked; registrar('CF', autoCarg ? 'Cargadores en automático' : 'Cargadores en manual'); };
-$('#bCucharon').onclick = () => { const c = CARGS.find(c => c.fase === 'espera') || CARGS[0]; c.pedido = true; };
+$('#bCucharon').onclick = () => {
+  if (M.tolva > TOLVA_MAX - 10) { registrar('CF', 'La tolva no recibe otro cucharón: quedan ' + fmt(TOLVA_MAX - M.tolva, 1) + ' t de capacidad', 'AVISO'); return; }
+  const c = CARGS.find(c => c.fase === 'espera') || CARGS.find(c => !c.pedido) || CARGS[0]; c.pedido = true;
+  registrar('CF-0' + (c.i + 1), 'Cucharón solicitado al cargador ' + (c.i + 1));
+};
 const POS_SON = { AV:mk('MK_FOCO_AV'), TM:mk('MK_FOCO_TM'), TI:mk('MK_FOCO_TI'), CR:mk('MK_FOCO_CR'), B1:mk('MK_FOCO_B1'), B5:mk('MK_FOCO_B5'), B2:mk('MK_FOCO_B2'), B3:mk('MK_FOCO_B3'), B4:mk('MK_FOCO_B4'), CARGS:CARGS.map(c => c.env.position) };
 $('#bSonido').onclick = () => { const on = SON.alternar(POS_SON); $('#bSonido').classList.toggle('on', on); $('#bSonido').textContent = on ? '🔊 Sonido' : '🔈 Sonido'; };
 
@@ -6139,12 +6170,13 @@ function cuadro(ahora, manual) {
   if (acum > 0.25) { acum = 0; refrescar(pot); dibujarPilas(); SON.actualizar(); }
   SON.oyente(camera);
   if (vuelo) { const x = Math.min(1, (ahora - vuelo.t0) / 1100), s = x * x * (3 - 2 * x); orbit.target.lerpVectors(vuelo.a, vuelo.b, s); camera.position.lerpVectors(vuelo.ca, vuelo.cb, s); if (x >= 1) vuelo = null; }
+  if (renderer.domElement.clientWidth !== cont.clientWidth || renderer.domElement.clientHeight !== cont.clientHeight) tamano();
   orbit.update();
   if (composer) composer.render(); else renderer.render(scene, camera);
   if (!manual) requestAnimationFrame(cuadro);
 }
 requestAnimationFrame(cuadro);
-window.__planta = { cuadros(n, paso = 50) { let t = ultimo; for (let k = 0; k < n; k++) { t += paso; cuadro(t, true); } }, avanzar(seg) { for (let k = 0; k < seg / 0.5; k++) { simT += 0.5; pasoProceso(0.5); pot = pasoMotores(0.5, performance.now()); vigilar(); muestrear(pot); } refrescar(pot); dibujarPilas(); }, EQ, M, PILA, CARGS, arrancar, parar, scene, camera, renderer, sol, U, materiales, orbit, pmrem, sky2, TEX, irA, get simT() { return simT; }, set factor(f) { factor = f; } };
+window.__planta = { cuadros(n, paso = 50) { let t = Math.max(ultimo, performance.now()); for (let k = 0; k < n; k++) { t += paso; cuadro(t, true); } }, avanzar(seg) { for (let k = 0; k < seg / 0.5; k++) { simT += 0.5; pasoProceso(0.5); pot = pasoMotores(0.5, performance.now()); vigilar(); muestrear(pot); } refrescar(pot); dibujarPilas(); }, EQ, M, PILA, CARGS, arrancar, parar, scene, camera, renderer, sol, U, materiales, orbit, pmrem, sky2, TEX, irA, get simT() { return simT; }, set factor(f) { factor = f; } };
 })();
 </script>
 </body>
