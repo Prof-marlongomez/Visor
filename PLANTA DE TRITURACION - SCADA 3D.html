@@ -61,6 +61,31 @@ select{height:28px;border:1px solid var(--borde);border-radius:4px;background:#f
 .btn-emerg.activa{background:#fdeceb;border-color:var(--mal);animation:parp 1s infinite}
 @keyframes parp{50%{opacity:.55}}
 
+/* barra de simulación (como la de FlexSim) */
+#barraSim{flex:none;display:flex;align-items:center;gap:8px;padding:4px 12px;background:#f3f5f7;border-bottom:1px solid var(--borde);flex-wrap:wrap}
+#barraSim .sep{height:22px}
+#barraSim #reloj{font:600 14px var(--mono)}
+.reloj-caja{position:relative}
+#bReloj .flecha{color:var(--tenue);font-size:11px}
+.flotante{position:absolute;left:0;top:32px;z-index:30;width:430px;max-width:92vw;background:#fff;border:1px solid var(--borde);border-radius:4px;box-shadow:0 10px 26px #0003;padding:10px 12px}
+.pt-fila{display:grid;grid-template-columns:112px 1fr auto;gap:6px;align-items:center;margin:6px 0}
+.pt-fila>span:first-child{color:var(--tenue)}
+.pt-fila input[type=date],.pt-fila input[type=time]{height:26px;border:1px solid var(--borde);border-radius:4px;padding:0 4px}
+#rVel{width:150px;accent-color:var(--acento)}
+#txVel{min-width:92px}
+#btnEjecutar.pausa{background:#fff6e0}
+#avance{position:absolute;inset:0;z-index:20;background:#eef1f4d9;display:grid;place-items:center}
+#centro{position:relative}
+.caja-av{background:#fff;border:1px solid var(--borde);border-radius:6px;padding:16px 20px;display:flex;flex-direction:column;gap:10px;min-width:300px;box-shadow:0 10px 30px #0002}
+.caja-av .bar{height:6px;background:#dde2e7;border-radius:3px;overflow:hidden}
+.caja-av .bar i{display:block;height:100%;width:0;background:var(--acento)}
+.arbol .grp{display:flex;align-items:center;gap:7px;height:24px;margin-top:4px;padding:0 6px;background:linear-gradient(#edf2f8,#dfe7f1);border:1px solid #cad6e4;border-radius:2px;color:var(--texto);font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;cursor:pointer;user-select:none}
+.arbol .grp .tog{width:11px;height:11px;border:1px solid #7d8894;background:#fff;position:relative;flex:none}
+.arbol .grp .tog::before{content:"";position:absolute;left:2px;right:2px;top:4px;height:1px;background:#3b4652}
+.arbol li.cerrado>.grp .tog::after{content:"";position:absolute;top:2px;bottom:2px;left:4px;width:1px;background:#3b4652}
+.arbol li.cerrado>ul{display:none}
+.arbol li.rama>ul{padding-left:6px}
+
 /* ---------- distribución ---------- */
 #cuerpo{flex:1;display:flex;min-height:0}
 .panel{background:var(--panel);display:flex;flex-direction:column;min-height:0}
@@ -110,7 +135,6 @@ body.sin-izq #izq,body.sin-der #der{display:none}
 .arbol .nodo{display:flex;align-items:center;gap:6px;min-height:24px;padding:0 6px;border-radius:3px;cursor:pointer;white-space:nowrap;overflow:hidden}
 .arbol .nodo:hover{background:#e8edf3}
 .arbol .nodo.sel{background:var(--acento-s);color:#1b4d8c}
-.arbol .grp{color:var(--tenue2);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;padding:7px 6px 1px}
 .arbol .tag{font:600 12px var(--mono)}
 .arbol .nom{color:var(--tenue);overflow:hidden;text-overflow:ellipsis}
 .arbol .nodo.sel .nom{color:#1b4d8c}
@@ -303,9 +327,6 @@ body.sin-izq #izq,body.sin-der #der{display:none}
   <div class="grupo"><span class="rot">Modo</span>
     <div class="seg" id="segModo"><button data-modo="operacion" class="on">Operación</button><button data-modo="practica" title="Práctica de arranque calificada">Práctica</button></div>
   </div>
-  <div class="grupo"><span id="reloj" title="Hora simulada">06:00</span>
-    <div class="seg" id="segVel" title="Velocidad de la simulación"><button data-f="1" class="on">1×</button><button data-f="10">10×</button><button data-f="60">60×</button></div>
-  </div>
   <div class="grupo derecha">
     <select id="selCalidad" title="Calidad de los gráficos 3D">
       <option value="alta">3D alta</option><option value="liviana">3D liviana</option><option value="compatible">3D compatible</option>
@@ -315,6 +336,29 @@ body.sin-izq #izq,body.sin-der #der{display:none}
     <button class="btn on" id="bPropiedades">Propiedades</button>
   </div>
 </header>
+<div id="barraSim">
+  <button class="btn" id="bReiniciar" title="Vuelve al estado inicial y a la hora de inicio"><span class="ic">⏮</span>Reiniciar</button>
+  <button class="btn" id="bEjecutar" title="Ejecutar o detener el tiempo de la simulación"><span class="ic" id="icEjec">❚❚</span><span id="txEjec">Detener</span></button>
+  <button class="btn" id="bAvanzar" title="Calcula sin dibujar hasta el tiempo de parada"><span class="ic">⏭</span>Avanzar rápidamente</button>
+  <div class="sep"></div>
+  <span class="rot">Tiempo</span>
+  <div class="reloj-caja"><button class="btn" id="bReloj" title="Configurar tiempo de simulación"><span id="reloj">06:00</span><span class="flecha">▾</span></button>
+    <div id="panelTiempo" class="flotante" hidden>
+      <div class="pt-fila"><span>Mostrar</span><div class="seg peq" id="segMostrar"><button data-m="hora">Hora</button><button data-m="fecha" class="on">Fecha y hora</button><button data-m="trans">Transcurrido</button></div></div>
+      <div class="pt-fila"><span>Hora de inicio</span><input type="date" id="inFecha"><input type="time" id="inHora" step="60"></div>
+      <div class="pt-fila"><span></span><button class="btn mini" id="bAplicarInicio">Aplicar y reiniciar</button></div>
+      <div class="pt-fila"><span>Tiempo de parada</span><label class="chk" style="margin:0"><input type="checkbox" id="chkParada"> Detener después de</label>
+        <select id="selDur"><option value="1">1 hora</option><option value="8" selected>1 turno (8 h)</option><option value="24">1 día</option><option value="168">1 semana</option><option value="720">30 días</option></select></div>
+      <div class="pt-fila"><span></span><span class="tenue" id="txParada">Sin tiempo de parada</span></div>
+      <p class="nota">Al cumplirse el tiempo de parada la simulación se detiene y muestra el resumen del periodo: producción, pérdidas y tiempo detenido por causa. «Avanzar rápidamente» llega a ese punto sin dibujar.</p>
+    </div>
+  </div>
+  <span class="tenue" id="txHasta"></span>
+  <div class="sep"></div>
+  <span class="rot">Velocidad</span>
+  <input type="range" id="rVel" min="0" max="10" step="1" value="0" title="Velocidad de la simulación">
+  <b id="txVel" class="mono">1×</b>
+</div>
 
 <main id="cuerpo">
   <aside id="izq" class="panel">
@@ -333,6 +377,7 @@ body.sin-izq #izq,body.sin-der #der{display:none}
       <button data-t="tten">Tendencias</button>
       <button data-t="tal">Alarmas y eventos<span class="cnt" id="nAl" hidden>0</span></button>
     </nav>
+    <div id="avance" hidden><div class="caja-av"><b>Avanzando la simulación…</b><div class="bar"><i id="avBar"></i></div><span id="avTxt" class="tenue"></span><button class="btn" id="bCancelarAv">Cancelar</button></div></div>
     <div class="doc" id="t3d">
       <div id="escena">
         <div id="cortina"><div>Cargando la planta…</div><div class="bar"><i id="progreso"></i></div></div>
@@ -5649,7 +5694,34 @@ const M = { tolva:38, AV:0, TM:0, B1:0, CR:0, B5:0, TI:0, B2:0, B3:0, B4:0 };
 const TAU = { AV:4, TM:6, B1:12, CR:4, B5:10, TI:5, B2:8, B3:8, B4:8 };
 const TOLVA_MAX = 60;
 const PILA = { B2:900, B3:650, B4:780 }, PROD = { B2:0, B3:0, B4:0 };
-let simT = 6 * 3600, factor = 1, energia = 0, autoCarg = true, emergencia = false, secuencia = null, pot = 0;
+let simT = 6 * 3600, factor = 1, energia = 0, autoCarg = true, emergencia = false, secuencia = null, pot = 0, corriendo = true;
+// reloj: T0 es la medianoche del día de inicio; simT son los segundos transcurridos desde esa medianoche
+const CONF = { fecha:(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; })(), horaIni:6 * 3600, mostrar:'fecha' };
+const PARADA = { activa:false, t:0 };
+const DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+const fechaDe = t => new Date(CONF.fecha.getTime() + t * 1000);
+function fechaTxt(t, corta) {
+  const d = fechaDe(t), dd = String(d.getDate()).padStart(2, '0'), mm = String(d.getMonth() + 1).padStart(2, '0');
+  return `${DIAS[d.getDay()]} ${dd}/${mm}${corta ? '' : '/' + d.getFullYear()} ${reloj(t)}`;
+}
+function relojTxt() {
+  if (CONF.mostrar === 'hora') return reloj(simT);
+  if (CONF.mostrar === 'trans') return 'T+ ' + fmt((simT - CONF.horaIni) / 3600, 2) + ' h';
+  return fechaTxt(simT);
+}
+// contabilidad del periodo: tiempo produciendo y tiempo detenido por causa
+const ESTAD = { t0:6 * 3600, t:0, marcha:0, causas:{ alimentacion:0, operador:0, falla:0, emergencia:0, tension:0 }, prod0:0 };
+const CAUSA_TXT = { alimentacion:'En marcha sin alimentación', operador:'Detenida por el operador o en arranque', falla:'Detenida por disparo o falla', emergencia:'Paro de emergencia', tension:'Sin tensión eléctrica' };
+function contabilizar(dt) {
+  ESTAD.t += dt;
+  const todos = EQ.every(e => e.estado === 'marcha');
+  if (todos && POR.AV.tph > 20) ESTAD.marcha += dt;
+  else if (todos) ESTAD.causas.alimentacion += dt;
+  else if (emergencia) ESTAD.causas.emergencia += dt;
+  else if (!hayControl()) ESTAD.causas.tension += dt;
+  else if (EQ.some(e => e.estado === 'disparo' || e.F.disparado) || Object.keys(OBSTR).length) ESTAD.causas.falla += dt;
+  else ESTAD.causas.operador += dt;
+}
 const enMarcha = id => POR[id].estado === 'marcha' || POR[id].estado === 'arrancando';
 const prodTph = () => POR.B2.tph + POR.B3.tph + POR.B4.tph;
 // quién descarga sobre quién: sirve para detectar chutes obstruidos
@@ -5702,18 +5774,18 @@ function parar(id, motivo, disparo) {
     .forEach(d => { if (enMarcha(d)) parar(d, 'se detuvo ' + e.tag, true); });
 }
 const ORDEN_ARR = EQ.map(e => e.id), ORDEN_PARO = ['AV', 'TM', 'B5', 'TI', 'B1', 'CR', 'B4', 'B3', 'B2'];
-function pasoSecuencia(ahora) {
-  if (!secuencia || ahora < secuencia.espera) return;
+function pasoSecuencia() {   // todo en tiempo simulado: funciona igual a cualquier velocidad y al avanzar rápido
+  if (!secuencia || simT < secuencia.espera) return;
   const id = secuencia.lista[secuencia.i];
   if (!id) { registrar('SIS', secuencia.tipo === 'arranque' ? 'Planta en marcha' : 'Planta detenida y vacía'); secuencia = null; return; }
   if (secuencia.tipo === 'arranque') {
     if (!arrancar(id)) { registrar('SIS', 'Secuencia de arranque interrumpida', 'AVISO'); secuencia = null; return; }
-    secuencia.i++; secuencia.espera = ahora + (POR[id].yd ? 4200 : 2200);
+    secuencia.i++; secuencia.espera = simT + (POR[id].yd ? 4.5 : 2.5);
   } else {
     const ant = secuencia.lista[secuencia.i - 1];
-    if (secuencia.i > 0 && (M[ant] || 0) > 0.3 && ahora - secuencia.desde < 8000) return;
+    if (secuencia.i > 0 && (M[ant] || 0) > 0.3 && simT - secuencia.desde < 12) return;
     if (enMarcha(id)) { POR[id].estado = 'parado'; registrar(POR[id].tag, 'Paro de ' + POR[id].nombre); }
-    secuencia.i++; secuencia.desde = ahora; secuencia.espera = ahora + 1200;
+    secuencia.i++; secuencia.desde = simT; secuencia.espera = simT + 1.5;
   }
 }
 const FLUJO = { finos:0, tm:0, ti:0 };
@@ -5893,11 +5965,11 @@ function arranqueSecuencial() {
   if (emergencia) { registrar('SIS', 'Emergencia activa: rearme antes de arrancar', 'AVISO'); return; }
   if (!hayControl()) { registrar('SIS', 'Sin tensión de control: revise Q0 y Q10 en el tablero', 'AVISO'); return; }
   sirena(); registrar('SIS', 'Secuencia de arranque de aguas abajo hacia arriba');
-  secuencia = { tipo:'arranque', lista:ORDEN_ARR, i:0, espera:performance.now() + 5000 };
+  secuencia = { tipo:'arranque', lista:ORDEN_ARR, i:0, espera:simT + 6 };
 }
 function paroSecuencial() {
   registrar('SIS', 'Paro secuencial: se corta la alimentación y se vacían los equipos');
-  secuencia = { tipo:'paro', lista:ORDEN_PARO, i:0, espera:0, desde:performance.now() };
+  secuencia = { tipo:'paro', lista:ORDEN_PARO, i:0, espera:simT, desde:simT };
 }
 function pedirCucharon() {
   if (M.tolva > TOLVA_MAX - 10) { registrar('CF', 'La tolva no recibe otro cucharón: quedan ' + fmt(TOLVA_MAX - M.tolva, 1) + ' t de capacidad', 'AVISO'); return; }
@@ -6018,7 +6090,26 @@ const PRACT = {
    3. SONIDO SINTETIZADO (Web Audio, posicional)
    ======================================================================== */
 const SON = (() => {
-  let ctx = null, maestro = null, activo = false; const fuentes = [];
+  let ctx = null, maestro = null, activo = false, htmlAudio = null; const fuentes = [];
+  const VOL = MOVIL ? 1.4 : 0.9;   // los parlantes del celular suenan más bajo
+  // En iPhone el audio web se silencia con el interruptor lateral de silencio. Se pide la sesión de
+  // reproducción (iOS 17 o más) y, para versiones anteriores, se reproduce en bucle un audio HTML mudo,
+  // que cambia la categoría de la sesión y deja sonar el audio web.
+  function wavMudo() {
+    const n = 4000, b = new ArrayBuffer(44 + n), v = new DataView(b), w = (o, t) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+    w(0, 'RIFF'); v.setUint32(4, 36 + n, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true); w(36, 'data'); v.setUint32(40, n, true);
+    for (let i = 0; i < n; i++) v.setUint8(44 + i, 128);
+    return URL.createObjectURL(new Blob([b], { type:'audio/wav' }));
+  }
+  function desbloquear() {
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+    try { if (!htmlAudio) { htmlAudio = new Audio(wavMudo()); htmlAudio.loop = true; htmlAudio.setAttribute('playsinline', ''); } htmlAudio.play().catch(() => {}); } catch (e) {}
+    if (ctx && ctx.state !== 'running') ctx.resume().catch(() => {});
+  }
+  // al volver a la página (o tras una llamada) el celular suspende el audio: se reanuda con el siguiente toque
+  document.addEventListener('pointerdown', () => { if (activo && ctx && ctx.state !== 'running') desbloquear(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && activo && ctx && ctx.state !== 'running') ctx.resume().catch(() => {}); });
   function ruido(tipo) {
     const n = ctx.sampleRate * 2, b = ctx.createBuffer(1, n, ctx.sampleRate), d = b.getChannelData(0);
     let u = 0; for (let i = 0; i < n; i++) { const w = Math.random() * 2 - 1; u = tipo === 'cafe' ? (u + 0.02 * w) / 1.02 : w; d[i] = tipo === 'cafe' ? u * 3.5 : w; }
@@ -6026,7 +6117,7 @@ const SON = (() => {
   }
   function crear() {
     ctx = new (window.AudioContext || window.webkitAudioContext)();
-    maestro = ctx.createGain(); maestro.gain.value = 0.9; maestro.connect(ctx.destination);
+    maestro = ctx.createGain(); maestro.gain.value = VOL; maestro.connect(ctx.destination);
     SON.blanco = ruido('blanco'); SON.cafe = ruido('cafe');
   }
   function fuenteRuido(buf, f, q, tipoF = 'lowpass') {
@@ -6039,7 +6130,7 @@ const SON = (() => {
     const lg = ctx.createGain(); lg.gain.value = prof; lfo.connect(lg); lg.connect(g.gain); lfo.start(); nodo.connect(g); return g;
   }
   function panner(p) {
-    const pn = ctx.createPanner(); pn.panningModel = 'equalpower'; pn.distanceModel = 'inverse'; pn.refDistance = 7; pn.rolloffFactor = 1.1; pn.maxDistance = 400;
+    const pn = ctx.createPanner(); pn.panningModel = 'equalpower'; pn.distanceModel = 'inverse'; pn.refDistance = MOVIL ? 12 : 7; pn.rolloffFactor = MOVIL ? 0.8 : 1.1; pn.maxDistance = 400;
     pn.positionX.value = p.x; pn.positionY.value = p.y; pn.positionZ.value = p.z; pn.connect(maestro); return pn;
   }
   // Tipos: tritura (golpe grave modulado + fragmentacion), criba y alimentador (vibracion), banda (rodadura), motor (zumbido)
@@ -6077,7 +6168,8 @@ const SON = (() => {
         SON.cargs = POS.CARGS.map(p => cargador(p));
       }
       activo = !activo;
-      if (activo) ctx.resume(); maestro.gain.setTargetAtTime(activo ? 0.9 : 0, ctx.currentTime, 0.1);
+      if (activo) desbloquear(); else if (htmlAudio) htmlAudio.pause();
+      maestro.gain.setTargetAtTime(activo ? VOL : 0, ctx.currentTime, 0.1);
       return activo;
     },
     oyente(cam) {
@@ -6487,7 +6579,7 @@ function pasoCargador(c, dt) {
     obj.brazo = 0.12; obj.balde = 0.45;
     const pos = puntoRuta(c.ruta, c.s);
     if (pos.k >= c.ruta.length - 3 && rampaOcupada !== -1 && rampaOcupada !== c.i) { /* espera turno al pie de la rampa */ }
-    else { if (pos.k >= c.ruta.length - 3) rampaOcupada = c.i; c.s += vel * dt; }
+    else { if (pos.k >= c.ruta.length - 3) rampaOcupada = c.i; if (c.alineado !== false) c.s += vel * dt; }
     c.mira.copy(pos.p).add(pos.dir); c.atras = false;
     if (c.s >= L) { c.s = L; c.fase = 'descargar'; c.t = 0; }
   } else if (c.fase === 'descargar') {
@@ -6500,10 +6592,11 @@ function pasoCargador(c, dt) {
       for (let k = 0; k < 30; k++) CAIDAS.lanzar(P_TOLVA_T.clone().add(new V3(-2 + Math.random(), 1.8 + Math.random(), (Math.random() - .5) * 2)), new V3(1.2 + Math.random(), 0, 0), P_TOLVA_B.y + (P_TOLVA_T.y - P_TOLVA_B.y) * Math.pow(M.tolva / TOLVA_MAX, 0.6), 0.25 + Math.random() * 0.2);
     }
     if (c.t > 4.2) { c.fase = 'vuelta'; c.s = L; }
-  } else if (c.fase === 'vuelta') {   // retrocede por la rampa y vuelve de frente al patio
+  } else if (c.fase === 'vuelta') {   // retrocede solo en la plataforma, gira en ella y baja la rampa de frente
     obj.brazo = 0.05; obj.balde = 0.25;
-    c.s -= vel * dt; const pos = puntoRuta(c.ruta, Math.max(0, c.s));
-    c.atras = pos.k >= c.ruta.length - 2;
+    if (c.alineado !== false) c.s -= vel * (c.atras ? 0.5 : 1) * dt;
+    const pos = puntoRuta(c.ruta, Math.max(0, c.s));
+    c.atras = pos.k >= c.ruta.length - 1;
     c.mira.copy(pos.p).addScaledVector(pos.dir, c.atras ? 1 : -1);
     if (pos.k < c.ruta.length - 3 && rampaOcupada === c.i) rampaOcupada = -1;
     if (c.s <= 0) { c.s = 0; c.fase = 'espera'; }
@@ -6514,6 +6607,7 @@ function pasoCargador(c, dt) {
   // orientacion suave (con cabeceo en la rampa)
   const q0 = c.env.quaternion.clone(); c.env.lookAt(c.mira.x, c.fase === 'ida' || c.fase === 'vuelta' ? c.mira.y : c.env.position.y, c.mira.z); const q1 = c.env.quaternion.clone();
   c.env.quaternion.copy(q0).slerp(q1, Math.min(1, dt * 2.5));
+  c.alineado = q0.angleTo(q1) < 0.4;   // si debe girar mucho, primero gira en el sitio y luego avanza
   c.ruedas.forEach(r => r.rotation.z -= (c.atras ? -1 : 1) * avance / 0.82);
   c.brazoA += (obj.brazo - c.brazoA) * Math.min(1, dt * 2); c.baldeA += (obj.balde - c.baldeA) * Math.min(1, dt * 3);
   if (c.brazo) c.brazo.rotation.z = c.brazoA; if (c.balde) c.balde.rotation.z = c.baldeA;
@@ -6602,13 +6696,13 @@ function togglePanel(p) {
   $(p === 'izq' ? '#bExplorador' : '#bPropiedades').classList.toggle('on', !ocultar);
   tamano();
 }
+$('#izq').addEventListener('click', e => { const h3 = e.target.closest('.psec>h3'); if (h3) h3.parentElement.classList.toggle('cerrada'); });
 $('#bExplorador').onclick = () => togglePanel('izq');
 $('#bPropiedades').onclick = () => togglePanel('der');
 $('#bCerrarIzq').onclick = () => togglePanel('izq');
 if (innerWidth <= 980) $('#bExplorador').classList.remove('on');
 
 /* ---------- barra superior ---------- */
-$('#segVel').onclick = e => { const b = e.target.closest('button'); if (!b) return; factor = +b.dataset.f; $$('#segVel button').forEach(x => x.classList.toggle('on', x === b)); };
 $('#selCalidad').onchange = e => { aplicarCalidad(e.target.value); registrar('SIS', 'Gráficos: ' + e.target.selectedOptions[0].textContent); };
 $('#segModo').onclick = e => {
   const b = e.target.closest('button'); if (!b) return;
@@ -6632,13 +6726,15 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { menuVistas
 const ARBOL = [['Recepción', ['AV']], ['Trituración', ['TM', 'TI']], ['Transporte', ['B1', 'B5']], ['Clasificación', ['CR']], ['Productos', ['B2', 'B3', 'B4']]];
 function construirArbol() {
   const nodo = (clave, dot, tag, nom) => `<li><div class="nodo" data-sel="${clave}">${dot}<span class="tag">${tag}</span><span class="nom">${nom}</span></div></li>`;
+  const rama = (g, cuerpo) => `<li class="rama"><div class="grp"><span class="tog"></span>${g}</div><ul>${cuerpo}</ul></li>`;
   let h = '<li><div class="nodo sel" data-sel="planta"><span class="dot" data-dotp></span><b>Planta de trituración</b></div></li>';
-  ARBOL.forEach(([g, ids]) => { h += `<li class="grp">${g}</li>` + ids.map(id => nodo('eq:' + id, `<span class="dot" data-dot="${id}"></span>`, POR[id].tag, POR[id].corto)).join(''); });
-  h += '<li class="grp">Servicios</li>' + nodo('ccm', '<span class="dot" data-dotccm></span>', 'CCM-01', 'Centro de control de motores')
-    + CARGS.map((c, i) => nodo('carg:' + i, `<span class="dot" data-dotc="${i}"></span>`, 'CF-0' + (i + 1), 'Cargador frontal')).join('');
+  ARBOL.forEach(([g, ids]) => { h += rama(g, ids.map(id => nodo('eq:' + id, `<span class="dot" data-dot="${id}"></span>`, POR[id].tag, POR[id].corto)).join('')); });
+  h += rama('Servicios', nodo('ccm', '<span class="dot" data-dotccm></span>', 'CCM-01', 'Centro de control de motores')
+    + CARGS.map((c, i) => nodo('carg:' + i, `<span class="dot" data-dotc="${i}"></span>`, 'CF-0' + (i + 1), 'Cargador frontal')).join(''));
   $('#arbol').innerHTML = h;
 }
 $('#arbol').onclick = e => {
+  const g = e.target.closest('.grp'); if (g) { g.parentElement.classList.toggle('cerrado'); return; }
   const n = e.target.closest('[data-sel]'); if (!n) return;
   const [t, id] = n.dataset.sel.split(':');
   seleccionar({ tipo:t, id:t === 'eq' ? id : t === 'carg' ? +id : null }, true);
@@ -6861,7 +6957,7 @@ function dibujarTendencias() {
 
 /* ---------- barra de estado y ventana de resultados ---------- */
 function pintarEstado() {
-  $('#reloj').textContent = reloj(simT);
+  $('#reloj').textContent = relojTxt();
   $('#kProd').textContent = fmt(prodTph()); $('#kRec').textContent = fmt(POR.B5.tph); $('#kPot').textContent = fmt(pot);
   const tot = PROD.B2 + PROD.B3 + PROD.B4; $('#kEsp').textContent = tot > 5 ? fmt(energia / tot, 2) : '–';
   $('#kTol').textContent = fmt(M.tolva / TOLVA_MAX * 100);
@@ -7164,6 +7260,149 @@ function refrescarTablero() {
 }
 
 /* ========================================================================
+   7e. TIEMPO DE SIMULACIÓN (barra como la de FlexSim): reiniciar, ejecutar o detener,
+   avanzar rápidamente, hora de inicio, tiempo de parada, velocidad y resumen del periodo
+   ======================================================================== */
+const VELS = [1, 2, 5, 10, 30, 60, 120, 300, 600, 1800, 3600];
+const velTxt = f => f < 60 ? f + '×' : f < 3600 ? f + '× · ' + (f / 60) + ' min/s' : '3600× · 1 h/s';
+$('#rVel').oninput = e => { factor = VELS[+e.target.value]; $('#txVel').textContent = velTxt(factor); };
+
+// un paso de la lógica completa (sin dibujar): lo usan el bucle normal y el avance rápido
+function pasoLogico(dt) {
+  simT += dt;
+  pasoSecuencia(); pasoElectrico(dt); pasoProceso(dt);
+  pot = pasoMotores(dt); vigilar(); contabilizar(dt); alimentarLogico(dt); muestrear(); PRACT.paso();
+}
+// A más de 60× los cargadores animados no alcanzan: en automático se modela su aporte como caudal
+// (dos cargadores de 10 t con ciclo de unos 70 s) para mantener la tolva cerca del 80 %.
+let avanceRapido = false;
+function alimentarLogico(dt) {
+  if (!autoCarg || !(factor > 60 || avanceRapido)) return;
+  const meta = TOLVA_MAX * 0.8;
+  if (M.tolva < meta) M.tolva = Math.min(meta, M.tolva + 2 * 10 / 70 * dt);
+}
+
+function ejecutar(si) {
+  corriendo = si;
+  $('#txEjec').textContent = si ? 'Detener' : 'Ejecutar';
+  $('#icEjec').textContent = si ? '❚❚' : '▶';
+  $('#bEjecutar').classList.toggle('on', !si);
+}
+$('#bEjecutar').onclick = () => { ejecutar(!corriendo); if (corriendo && PARADA.activa && simT >= PARADA.t) { PARADA.activa = false; $('#chkParada').checked = false; pintarParada(); } };
+
+/* ---------- panel del reloj ---------- */
+const aISO = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+function abrirPanelTiempo(abrir) {
+  $('#panelTiempo').hidden = !abrir;
+  if (abrir) {
+    $('#inFecha').value = aISO(CONF.fecha);
+    $('#inHora').value = reloj(CONF.horaIni);
+    $$('#segMostrar button').forEach(b => b.classList.toggle('on', b.dataset.m === CONF.mostrar));
+  }
+}
+$('#bReloj').onclick = () => abrirPanelTiempo($('#panelTiempo').hidden);
+document.addEventListener('pointerdown', e => { if (!e.target.closest('.reloj-caja')) abrirPanelTiempo(false); });
+$('#segMostrar').onclick = e => { const b = e.target.closest('button'); if (!b) return; CONF.mostrar = b.dataset.m; $$('#segMostrar button').forEach(x => x.classList.toggle('on', x === b)); pintarEstado(); };
+$('#bAplicarInicio').onclick = () => {
+  const [a, m, d] = ($('#inFecha').value || aISO(CONF.fecha)).split('-').map(Number);
+  const [hh, mi] = ($('#inHora').value || '06:00').split(':').map(Number);
+  CONF.fecha = new Date(a, m - 1, d); CONF.horaIni = hh * 3600 + mi * 60;
+  abrirPanelTiempo(false); reiniciarModelo();
+};
+function pintarParada() {
+  $('#txParada').textContent = PARADA.activa ? 'Se detiene el ' + fechaTxt(PARADA.t) : 'Sin tiempo de parada';
+  $('#txHasta').textContent = PARADA.activa ? 'hasta ' + fechaTxt(PARADA.t, true) : '';
+}
+function fijarParada() {
+  PARADA.activa = $('#chkParada').checked;
+  PARADA.t = simT + (+$('#selDur').value) * 3600;
+  pintarParada();
+}
+$('#chkParada').onchange = fijarParada;
+$('#selDur').onchange = () => { if ($('#chkParada').checked) fijarParada(); };
+
+/* ---------- reiniciar el modelo ---------- */
+const PILA0 = { ...PILA }, M0 = { ...M };
+function reiniciarModelo() {
+  secuencia = null; emergencia = false; energia = 0; pot = 0;
+  simT = CONF.horaIni;
+  EQ.forEach(e => {
+    Object.assign(e, { estado:'parado', t0:0, horas:0, temp:32, I:0, tph:0, w:0, arranques:0, disparos:0, sel:'R' });
+    Object.assign(e.F, { ajuste:Math.round(e.ajusteOk * 2) / 2, theta:0, disparado:false });
+    Object.assign(e.Q, { estado:'cerrado', candado:false });
+  });
+  Object.assign(M, M0); Object.assign(PILA, PILA0); PROD.B2 = PROD.B3 = PROD.B4 = 0;
+  Object.keys(OBSTR).forEach(k => delete OBSTR[k]); Object.keys(est).forEach(k => est[k] = 0);
+  Object.assign(ELEC, { Q0:'cerrado', Q10:'cerrado', hongo:false, sirena:-1e9 });
+  Object.assign(ESTAD, { t0:simT, t:0, marcha:0, prod0:0 }); Object.keys(ESTAD.causas).forEach(k => ESTAD.causas[k] = 0);
+  ALS.length = 0; HIST.length = 0; ultMuestra = 0;
+  CARGS.forEach(c => { Object.assign(c, { fase:'espera', t:0, s:0, pedido:false, atras:false, alineado:true }); c.env.position.copy(c.ruta[0]); c.carga.visible = false; });
+  rampaOcupada = -1;
+  Object.values(T).forEach(t => { t.r.length = 0; t.acum = 0; });
+  if (PARADA.activa) fijarParada();
+  cerrarModal();
+  if (PRACT.activa) PRACT.iniciar();
+  else registrar('SIS', 'Modelo reiniciado: ' + fechaTxt(simT) + '. Planta detenida y tablero energizado.');
+  dibujarPilas(); dibujarTolva(); construirPropiedades(); refrescar();
+}
+$('#bReiniciar').onclick = () => reiniciarModelo();
+
+/* ---------- avanzar rápidamente hasta el tiempo de parada ---------- */
+let cancelarAv = false;
+$('#bCancelarAv').onclick = () => { cancelarAv = true; };
+$('#bAvanzar').onclick = () => {
+  if (!PARADA.activa || PARADA.t <= simT) { abrirPanelTiempo(true); registrar('SIS', 'Defina un tiempo de parada para avanzar rápidamente', 'AVISO'); return; }
+  const tIni = simT, tFin = PARADA.t, paso = 1;
+  avanceRapido = true; cancelarAv = false; $('#avance').hidden = false;
+  const lote = () => {
+    const limite = performance.now() + 30;
+    while (simT < tFin && performance.now() < limite && !cancelarAv) pasoLogico(Math.min(paso, tFin - simT));
+    $('#avBar').style.width = ((simT - tIni) / (tFin - tIni) * 100).toFixed(1) + '%';
+    $('#avTxt').textContent = fechaTxt(simT) + ' · ' + fmt((simT - tIni) / 3600, 1) + ' de ' + fmt((tFin - tIni) / 3600, 1) + ' h';
+    if (simT < tFin && !cancelarAv) { setTimeout(lote, 0); return; }
+    avanceRapido = false; $('#avance').hidden = true;
+    dibujarPilas(); dibujarTolva(); refrescar();
+    if (!cancelarAv) llegarParada();
+  };
+  lote();
+};
+
+/* ---------- tiempo de parada cumplido: se detiene y muestra el resumen del periodo ---------- */
+function llegarParada() {
+  simT = Math.min(simT, PARADA.t);
+  ejecutar(false);
+  registrar('SIS', 'Tiempo de parada cumplido: ' + fechaTxt(simT));
+  mostrarResumen();
+}
+function mostrarResumen() {
+  const h = x => fmt(x / 3600, 1) + ' h', pct = x => ESTAD.t > 0 ? fmt(x / ESTAD.t * 100, 1) + ' %' : '–';
+  const prod = PROD.B2 + PROD.B3 + PROD.B4, potencial = 100 * ESTAD.t / 3600;
+  const falla = ESTAD.causas.falla, disp = ESTAD.t > 0 ? (1 - falla / ESTAD.t) * 100 : 100;
+  const filasCausa = Object.entries(ESTAD.causas).filter(([, v]) => v > 0.5).sort((a, b) => b[1] - a[1])
+    .map(([k, v]) => `<tr><td>${CAUSA_TXT[k]}</td><td class="num">${h(v)}</td><td class="num">${pct(v)}</td></tr>`).join('') || '<tr><td colspan="3">Sin tiempo detenido</td></tr>';
+  $('#modal').innerHTML = `<div class="caja"><header><b>Resumen del periodo simulado</b><button class="btn mini" data-cerrar>✕</button></header><div class="cc">
+    <p class="nota" style="margin-top:0">Desde ${fechaTxt(ESTAD.t0)} hasta ${fechaTxt(simT)} · ${h(ESTAD.t)} de simulación</p>
+    <h4>Producción</h4><table class="tabla"><tbody>
+      <tr><td>Arena</td><td class="num">${fmt(PROD.B2)} t</td></tr><tr><td>Grava 1/2"</td><td class="num">${fmt(PROD.B3)} t</td></tr><tr><td>Grava 3/4"</td><td class="num">${fmt(PROD.B4)} t</td></tr>
+      <tr><td><b>Total producido</b></td><td class="num"><b>${fmt(prod)} t</b></td></tr>
+      <tr><td>Potencial a 100 t/h</td><td class="num">${fmt(potencial)} t</td></tr>
+      <tr><td>Producción perdida</td><td class="num">${fmt(Math.max(0, potencial - prod))} t</td></tr></tbody></table>
+    <h4>Uso del tiempo</h4><table class="tabla"><thead><tr><th>Estado</th><th class="num">Tiempo</th><th class="num">%</th></tr></thead><tbody>
+      <tr><td>Produciendo</td><td class="num">${h(ESTAD.marcha)}</td><td class="num">${pct(ESTAD.marcha)}</td></tr>${filasCausa}</tbody></table>
+    <h4>Indicadores</h4><table class="tabla"><tbody>
+      <tr><td>Utilización (tiempo produciendo)</td><td class="num">${pct(ESTAD.marcha)}</td></tr>
+      <tr><td>Disponibilidad (descontando disparos y fallas)</td><td class="num">${fmt(disp, 1)} %</td></tr>
+      <tr><td>Energía consumida</td><td class="num">${fmt(energia)} kWh</td></tr>
+      <tr><td>Consumo específico</td><td class="num">${prod > 5 ? fmt(energia / prod, 2) + ' kWh/t' : '–'}</td></tr>
+      <tr><td>Arranques y disparos</td><td class="num">${EQ.reduce((s, e) => s + e.arranques, 0)} · ${EQ.reduce((s, e) => s + e.disparos, 0)}</td></tr></tbody></table>
+    <div class="pbotones"><button class="btn" data-acc="continuarSim">Continuar sin tiempo de parada</button><button class="btn" data-acc="reiniciarSim">Reiniciar</button><button class="btn" data-cerrar>Cerrar</button></div>
+  </div></div>`;
+  $('#modal').hidden = false;
+}
+ACCIONES.continuarSim = () => { PARADA.activa = false; $('#chkParada').checked = false; pintarParada(); cerrarModal(); ejecutar(true); };
+ACCIONES.reiniciarSim = () => reiniciarModelo();
+
+/* ========================================================================
    9. INICIO Y BUCLE DE SIMULACIÓN
    ======================================================================== */
 construirArbol(); construirCapas(); crearEtiquetas(); construirSinoptico(); construirTablero();
@@ -7176,7 +7415,7 @@ if (calInicial !== 'compatible') {
 }
 aplicarCalidad(calInicial);
 dibujarPilas(); dibujarTolva();
-seleccionar({ tipo:'planta' }); pintarModo();
+seleccionar({ tipo:'planta' }); pintarModo(); pintarParada(); $('#txVel').textContent = velTxt(factor);
 $('#progreso').style.width = '100%'; $('#cortina').remove();
 registrar('SIS', 'Sistema listo. Tolva con ' + fmt(M.tolva) + ' t. Use Arranque o practique el arranque desde el tablero.');
 if (avisoGraficos) registrar('SIS', avisoGraficos);
@@ -7189,12 +7428,13 @@ function refrescar() {
 let ultimo = performance.now(), acum = 0;
 const tmp = new V3();
 function cuadro(ahora, manual) {
-  const dtR = Math.min(0.1, (ahora - ultimo) / 1000); ultimo = ahora;
-  const dt = dtR * factor; simT += dt;
-  pasoSecuencia(ahora);
+  const dtReal = Math.min(0.1, (ahora - ultimo) / 1000); ultimo = ahora;
+  const dtR = corriendo ? dtReal : 0;   // detenida: el tiempo no corre, pero la cámara sí se puede mover
+  let dt = dtR * factor;
+  if (PARADA.activa && simT + dt >= PARADA.t) dt = Math.max(0, PARADA.t - simT);
   const n = Math.ceil(dt / 0.5);
-  for (let k = 0; k < n; k++) { pasoElectrico(dt / n); pasoProceso(dt / n); }
-  pot = pasoMotores(dt, ahora); vigilar(); muestrear(); PRACT.paso();
+  for (let k = 0; k < n; k++) pasoLogico(dt / n);
+  if (corriendo && PARADA.activa && simT >= PARADA.t - 1e-6) llegarParada();
   const vis = Math.min(factor, 6);
   CARGS.forEach(c => pasoCargador(c, dtR * vis));
   // material visible: tasas proporcionales al flujo real
@@ -7219,7 +7459,7 @@ function cuadro(ahora, manual) {
   if (CR_MOV) CR_MOV.position.copy(CR0).add(tmp.set(Math.sin(ahora * 0.1) * 0.012, Math.cos(ahora * 0.1) * 0.012, 0).multiplyScalar(POR.CR.w));
   for (const id in SUP) SUP[id].offset.x -= dtR * 1.0 * POR[id].w;
   if (Math.abs(M.tolva - tolvaUlt) > 0.2) { dibujarTolva(); tolvaUlt = M.tolva; }
-  acum += dtR;
+  acum += dtReal;
   if (acum > 0.25) { acum = 0; refrescar(); dibujarPilas(); SON.actualizar(); }
   SON.oyente(camera);
   if (vuelo) { const x = Math.min(1, (ahora - vuelo.t0) / 1100), s = x * x * (3 - 2 * x); orbit.target.lerpVectors(vuelo.a, vuelo.b, s); camera.position.lerpVectors(vuelo.ca, vuelo.cb, s); if (x >= 1) vuelo = null; }
@@ -7236,8 +7476,8 @@ requestAnimationFrame(cuadro);
 // herramientas de depuración y de prueba desde la consola
 window.__planta = {
   cuadros(n, paso = 50) { let t = Math.max(ultimo, performance.now()); for (let k = 0; k < n; k++) { t += paso; cuadro(t, true); } },
-  avanzar(seg) { for (let k = 0; k < seg / 0.5; k++) { simT += 0.5; pasoElectrico(0.5); pasoProceso(0.5); pot = pasoMotores(0.5, performance.now()); vigilar(); muestrear(); PRACT.paso(); } refrescar(); dibujarPilas(); },
-  EQ, POR, M, PILA, CARGS, ELEC, PRACT, OBSTR, ALS, arrancar, parar, accion, seleccionar, pestana, aplicarCalidad, probarGraficos,
+  avanzar(seg) { for (let k = 0; k < seg / 0.5; k++) pasoLogico(0.5); refrescar(); dibujarPilas(); },
+  EQ, POR, M, PILA, CARGS, ELEC, PRACT, OBSTR, ALS, ESTAD, PARADA, CONF, reiniciarModelo, ejecutar, arrancar, parar, accion, seleccionar, pestana, aplicarCalidad, probarGraficos,
   scene, camera, renderer, orbit, irA, get simT() { return simT; }, get emergencia() { return emergencia; }, set factor(f) { factor = f; },
 };
 
